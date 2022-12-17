@@ -1,6 +1,6 @@
-import React, { useState } from "react";
-import styled from "styled-components";
-import Column from "../../App";
+import React, { useState } from 'react';
+import styled from 'styled-components';
+import Column from '../../App';
 
 interface IClrCellProps {
   rgb: number[];
@@ -8,25 +8,20 @@ interface IClrCellProps {
   isHidden?: boolean;
 }
 
-const ClrCell: React.FC<IClrCellProps & React.HTMLAttributes<HTMLElement>> = ({
-  ...props
-}) => {
-  return <Cell {...props}>{props.isHidden ? "?" : ""}</Cell>;
+const ClrCell: React.FC<IClrCellProps & React.HTMLAttributes<HTMLElement>> = ({ ...props }) => {
+  return <Cell {...props}>{props.isHidden ? props.isHidden : props.children}</Cell>;
 };
 
-const Cell = styled.div.attrs<IClrCellProps>((props) => ({
+const Cell = styled.div.attrs<IClrCellProps>(({ isHidden, rgb, size }) => ({
   style: {
-    backgroundColor: props.isHidden
-      ? `rgb(255, 255, 255)`
-      : `rgb(${props.rgb.join(",")})`,
+    backgroundColor: isHidden ? `rgb(255, 255, 255)` : `rgb(${rgb.join(',')})`,
+    width: `${size}px`,
+    height: `${size}px`,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    fontSize: '50px',
   },
-}))`
-  width: ${(props: IClrCellProps) => props.size}px;
-  height: ${(props: IClrCellProps) => props.size}px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  font-size: 50px;
-`;
+}))``;
 
 export default ClrCell;

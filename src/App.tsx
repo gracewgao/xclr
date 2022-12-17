@@ -1,12 +1,17 @@
-import React, { useEffect, useState } from "react";
-import styled from "styled-components";
-import ClrCell from "./components/ClrCell/ClrCell";
+import React, { useEffect, useRef, useState } from 'react';
+import styled from 'styled-components';
+import ClrCell from './components/ClrCell/ClrCell';
+import { BsCheck, BsX } from 'react-icons/bs';
+import { GrPowerReset } from 'react-icons/gr';
+import { clearTimeout } from 'timers';
+
 const GRID_SIZE = 5;
 const CELL_SIZE = 80;
 
 interface Selection {
   clr: number[];
   index?: number;
+  wasChosen?: boolean;
 }
 
 const shuffle = (arr: Selection[]): void => {
@@ -19,8 +24,7 @@ const shuffle = (arr: Selection[]): void => {
   }
 };
 
-const randomClr = () =>
-  [...Array(3)].map((i) => Math.floor(50 + Math.random() * 205));
+const randomClr = () => [...Array(3)].map((i) => Math.floor(50 + Math.random() * 205));
 
 const averageClr = (a: number[], b: number[]): number[] => {
   return a.map((val, i) => (val + b[i]) / 2);
@@ -32,30 +36,27 @@ const generateDupeClr = (real: number[], diff: number): number[] => {
 };
 
 const randomCoor = (): number[] => {
-  return [
-    Math.floor(Math.random() * GRID_SIZE),
-    Math.floor(Math.random() * GRID_SIZE),
-  ];
+  return [Math.floor(Math.random() * GRID_SIZE), Math.floor(Math.random() * GRID_SIZE)];
 };
 
-const App = () => {
-  const [rowClrs, setRowClrs] = useState(
-    [...Array(GRID_SIZE)].map(() => randomClr())
-  );
-  const [colClrs, setColClrs] = useState(
-    [...Array(GRID_SIZE)].map(() => randomClr())
-  );
-
+const App: React.FC = () => {
+  const [rowClrs, setRowClrs] = useState([...Array(GRID_SIZE)].map(() => randomClr()));
+  const [colClrs, setColClrs] = useState([...Array(GRID_SIZE)].map(() => randomClr()));
   const [hiddenCoors, setHiddenCoors] = useState<number[][]>([randomCoor()]);
   const [curCoors, setCurCoors] = useState([-1, -1]);
   const [isRevealMode, setIsRevealMode] = useState(false);
   const [selections, setSelections] = useState<Selection[]>([]);
   const [score, setScore] = useState(4);
+  const [isLost, setIsLost] = useState(false);
+  const [isResetTooltipVisible, setIsResetTooltipVisible] = useState(false);
+
+  // const resetRef = useRef();
 
   const resetGrid = () => {
     setRowClrs([...Array(GRID_SIZE)].map(() => randomClr()));
     setColClrs([...Array(GRID_SIZE)].map(() => randomClr()));
     setHiddenCoors([randomCoor()]);
+    setIsLost(false);
   };
 
   useEffect(() => {
@@ -82,27 +83,29 @@ const App = () => {
 
   useEffect(() => {
     const handleTabKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Tab") {
+      if (event.key === 'Tab') {
         event.preventDefault();
-        if (score === 0) {
-          console.log("come on now");
+        if (score === 0 && !isLost) {
+          console.log('come on now');
         }
         setScore(0);
       }
     };
-    document.addEventListener("keydown", handleTabKeyDown);
+    document.addEventListener('keydown', handleTabKeyDown);
     return () => {
-      document.removeEventListener("keydown", handleTabKeyDown);
+      document.removeEventListener('keydown', handleTabKeyDown);
     };
-  }, []);
+  }, [score, isLost]);
+
+  // let tooltipTimeout: any;
 
   return (
     <Page score={score}>
       <TitleRow>
         <Title>xclr</Title>
         <Column>
-          <Link href="https://www.github.com/gracewgao/xclr">grace</Link>
-          <Link href="https://www.github.com/harrchiu">harrison</Link>
+          <Link href='https://www.github.com/gracewgao/xclr'>grace</Link>
+          <Link href='https://www.github.com/harrchiu'>harrison</Link>
         </Column>
       </TitleRow>
       <InfoRow>
@@ -111,19 +114,36 @@ const App = () => {
             setIsRevealMode(!isRevealMode);
           }}
         >
-          {isRevealMode ? "hide hint" : "show hint"}
+          {isRevealMode ? 'hover hint on' : 'hover hint off'}
         </StyledButton>
         <ScoreText>Score: {score}</ScoreText>
+        <StyledReset
+          onClick={() => {
+            if (!score) {
+              resetGrid();
+            }
+            setScore(0);
+          }}
+          onMouseEnter={() => {
+            setIsResetTooltipVisible(true);
+            // setTimeout(() => {
+            //   setIsResetTooltipVisible(true);
+            // }, 1000);
+          }}
+          onMouseLeave={() => {
+            // clearTimeout(tooltipTimeout);
+            setIsResetTooltipVisible(false);
+          }}
+        />
+        <ResetTooltip show={isResetTooltipVisible}>press tab to restart</ResetTooltip>
       </InfoRow>
       <Column>
         {rowClrs.map((rClr, rId) => {
           return (
             <Row>
               {colClrs.map((cClr, cId) => {
-                const isHidden =
-                  hiddenCoors.findIndex(
-                    (arr) => arr[0] === rId && arr[1] === cId
-                  ) != -1;
+                const isMissing =
+                  hiddenCoors.findIndex((arr) => arr[0] === rId && arr[1] === cId) != -1;
 
                 let [shownRClr, shownCClr] = [rClr, cClr];
                 if (isRevealMode) {
@@ -144,8 +164,10 @@ const App = () => {
                     }}
                     rgb={averageClr(shownRClr, shownCClr)}
                     size={CELL_SIZE}
-                    isHidden={isHidden}
-                  />
+                    isHidden={isMissing && !isLost}
+                  >
+                    {isMissing && isLost && <BsCheck />}
+                  </ClrCell>
                 );
               })}
             </Row>
@@ -154,23 +176,36 @@ const App = () => {
       </Column>
       <GuessSection>
         {selections.map((sel: Selection, id) => {
+          let content = null;
+          if (isLost) {
+            if (sel.index !== undefined) {
+              content = <BsCheck />;
+            } else if (sel.wasChosen) {
+              content = <BsX />;
+            }
+          }
           return (
             <ClrCell
               key={`sel-${id}`}
               onClick={() => {
+                if (isLost) {
+                  return;
+                }
                 if (sel.index === undefined) {
-                  if (score === 0) {
-                    resetGrid();
-                  }
-                  setScore(0);
+                  setIsLost(true);
+                  const sels = selections;
+                  selections[id].wasChosen = true;
+                  setSelections([...sels]);
                   return;
                 }
                 setScore(score + 1);
               }}
               rgb={sel.clr}
               size={CELL_SIZE}
-              style={{ cursor: "pointer" }}
-            />
+              style={{ cursor: 'pointer' }}
+            >
+              {content}
+            </ClrCell>
           );
         })}
       </GuessSection>
@@ -191,6 +226,27 @@ const Column = styled.div`
 const Row = styled.div`
   display: flex;
   flex-direction: row;
+`;
+
+const ResetTooltip = styled(Row)<{ show: boolean }>`
+  display: ${(props) => (props.show ? 'flex' : 'none')};
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  position: absolute;
+  margin-left: 440px;
+`;
+
+const StyledReset = styled(GrPowerReset)`
+  font-size: 24px;
+  padding: 5px;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &:hover {
+    background-color: #eeeeee;
+    border-radius: 2px;
+  }
 `;
 
 const TitleRow = styled(Row)`
@@ -230,7 +286,7 @@ const Page = styled(Column)<{ score: number }>`
   background-image: ${(props) =>
     props.score > 4
       ? "url('https://www.iconpacks.net/icons/2/free-star-icon-2768-thumb.png')"
-      : "none"};
+      : 'none'};
 `;
 
 const InfoRow = styled(Row)`

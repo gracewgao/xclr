@@ -1,9 +1,10 @@
-import React, { useEffect, useRef, useState } from 'react';
-import styled from 'styled-components';
-import ClrCell from './components/ClrCell/ClrCell';
-import { BsCheck, BsX } from 'react-icons/bs';
-import { GrPowerReset } from 'react-icons/gr';
-import { clearTimeout } from 'timers';
+import React, { useEffect, useRef, useState } from "react";
+import styled from "styled-components";
+import ClrCell from "./components/ClrCell/ClrCell";
+import { BsCheck, BsX } from "react-icons/bs";
+import { GrPowerReset } from "react-icons/gr";
+import { clearTimeout } from "timers";
+import { Star, StarSvg } from "./components/Star";
 
 const GRID_SIZE = 5;
 const CELL_SIZE = 80;
@@ -24,7 +25,8 @@ const shuffle = (arr: Selection[]): void => {
   }
 };
 
-const randomClr = () => [...Array(3)].map((i) => Math.floor(50 + Math.random() * 205));
+const randomClr = () =>
+  [...Array(3)].map((i) => Math.floor(50 + Math.random() * 205));
 
 const averageClr = (a: number[], b: number[]): number[] => {
   return a.map((val, i) => (val + b[i]) / 2);
@@ -36,12 +38,32 @@ const generateDupeClr = (real: number[], diff: number): number[] => {
 };
 
 const randomCoor = (): number[] => {
-  return [Math.floor(Math.random() * GRID_SIZE), Math.floor(Math.random() * GRID_SIZE)];
+  return [
+    Math.floor(Math.random() * GRID_SIZE),
+    Math.floor(Math.random() * GRID_SIZE),
+  ];
+};
+
+const newStar = (clr: number[]): Star => {
+  return {
+    clr: clr,
+    img: Math.floor(Math.random() * 2),
+    coors: [
+      Math.floor(Math.random() * window.innerWidth),
+      Math.floor(Math.random() * 100),
+    ],
+    size: 30 + Math.floor(Math.random() * 30),
+    angle: Math.floor(Math.random() * 180),
+  };
 };
 
 const App: React.FC = () => {
-  const [rowClrs, setRowClrs] = useState([...Array(GRID_SIZE)].map(() => randomClr()));
-  const [colClrs, setColClrs] = useState([...Array(GRID_SIZE)].map(() => randomClr()));
+  const [rowClrs, setRowClrs] = useState(
+    [...Array(GRID_SIZE)].map(() => randomClr())
+  );
+  const [colClrs, setColClrs] = useState(
+    [...Array(GRID_SIZE)].map(() => randomClr())
+  );
   const [hiddenCoors, setHiddenCoors] = useState<number[][]>([randomCoor()]);
   const [curCoors, setCurCoors] = useState([-1, -1]);
   const [isRevealMode, setIsRevealMode] = useState(false);
@@ -49,6 +71,7 @@ const App: React.FC = () => {
   const [score, setScore] = useState(4);
   const [isLost, setIsLost] = useState(false);
   const [isResetTooltipVisible, setIsResetTooltipVisible] = useState(false);
+  const [stars, setStars] = useState<Star[]>([]);
 
   // const resetRef = useRef();
 
@@ -83,29 +106,38 @@ const App: React.FC = () => {
 
   useEffect(() => {
     const handleTabKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Tab') {
+      if (event.key === "Tab") {
         event.preventDefault();
         if (score === 0 && !isLost) {
-          console.log('come on now');
+          console.log("come on now");
         }
         setScore(0);
+        setStars([]);
       }
     };
-    document.addEventListener('keydown', handleTabKeyDown);
+    document.addEventListener("keydown", handleTabKeyDown);
     return () => {
-      document.removeEventListener('keydown', handleTabKeyDown);
+      document.removeEventListener("keydown", handleTabKeyDown);
     };
   }, [score, isLost]);
 
   // let tooltipTimeout: any;
 
   return (
-    <Page score={score}>
+    <Page>
+      {stars.map((star) => {
+        console.log(star.coors);
+        return (
+          <StarWrapper {...star}>
+            <StarSvg {...star} />
+          </StarWrapper>
+        );
+      })}
       <TitleRow>
         <Title>xclr</Title>
         <Column>
-          <Link href='https://www.github.com/gracewgao/xclr'>grace</Link>
-          <Link href='https://www.github.com/harrchiu'>harrison</Link>
+          <Link href="https://www.github.com/gracewgao/xclr">grace</Link>
+          <Link href="https://www.github.com/harrchiu">harrison</Link>
         </Column>
       </TitleRow>
       <InfoRow>
@@ -114,7 +146,7 @@ const App: React.FC = () => {
             setIsRevealMode(!isRevealMode);
           }}
         >
-          {isRevealMode ? 'hover hint on' : 'hover hint off'}
+          {isRevealMode ? "hover hint on" : "hover hint off"}
         </StyledButton>
         <ScoreText>Score: {score}</ScoreText>
         <StyledReset
@@ -123,6 +155,7 @@ const App: React.FC = () => {
               resetGrid();
             }
             setScore(0);
+            setStars([]);
           }}
           onMouseEnter={() => {
             setIsResetTooltipVisible(true);
@@ -135,7 +168,9 @@ const App: React.FC = () => {
             setIsResetTooltipVisible(false);
           }}
         />
-        <ResetTooltip show={isResetTooltipVisible}>press tab to restart</ResetTooltip>
+        <ResetTooltip show={isResetTooltipVisible}>
+          press tab to restart
+        </ResetTooltip>
       </InfoRow>
       <Column>
         {rowClrs.map((rClr, rId) => {
@@ -143,7 +178,9 @@ const App: React.FC = () => {
             <Row>
               {colClrs.map((cClr, cId) => {
                 const isMissing =
-                  hiddenCoors.findIndex((arr) => arr[0] === rId && arr[1] === cId) != -1;
+                  hiddenCoors.findIndex(
+                    (arr) => arr[0] === rId && arr[1] === cId
+                  ) != -1;
 
                 let [shownRClr, shownCClr] = [rClr, cClr];
                 if (isRevealMode) {
@@ -199,10 +236,11 @@ const App: React.FC = () => {
                   return;
                 }
                 setScore(score + 1);
+                setStars([...stars, newStar(sel.clr)]);
               }}
               rgb={sel.clr}
               size={CELL_SIZE}
-              style={{ cursor: 'pointer' }}
+              style={{ cursor: "pointer" }}
             >
               {content}
             </ClrCell>
@@ -229,7 +267,7 @@ const Row = styled.div`
 `;
 
 const ResetTooltip = styled(Row)<{ show: boolean }>`
-  display: ${(props) => (props.show ? 'flex' : 'none')};
+  display: ${(props) => (props.show ? "flex" : "none")};
   justify-content: center;
   align-items: center;
   font-size: 16px;
@@ -277,16 +315,12 @@ const StyledButton = styled.button`
   cursor: pointer;
 `;
 
-const Page = styled(Column)<{ score: number }>`
+const Page = styled(Column)`
   height: 100vh;
   width: 100vw;
   background-color: white;
   justify-content: center;
   align-items: center;
-  background-image: ${(props) =>
-    props.score > 4
-      ? "url('https://www.iconpacks.net/icons/2/free-star-icon-2768-thumb.png')"
-      : 'none'};
 `;
 
 const InfoRow = styled(Row)`
@@ -303,6 +337,13 @@ const GuessSection = styled(Row)`
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
+`;
+
+const StarWrapper = styled.div<Star>`
+  position: absolute;
+  top: ${(props) => props.coors[1]}px;
+  left: ${(props) => props.coors[0]}px;
+  transform: rotate(${(props) => props.angle}deg);
 `;
 
 export default App;

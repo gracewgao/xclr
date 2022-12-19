@@ -1,9 +1,8 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import styled from "styled-components";
 import ClrCell from "./components/ClrCell/ClrCell";
 import { BsCheck, BsX } from "react-icons/bs";
 import { GrPowerReset } from "react-icons/gr";
-import { clearTimeout } from "timers";
 import { Star, StarSvg } from "./components/Star";
 
 const GRID_SIZE = 5;
@@ -65,10 +64,11 @@ const App: React.FC = () => {
     [...Array(GRID_SIZE)].map(() => randomClr())
   );
   const [hiddenCoors, setHiddenCoors] = useState<number[][]>([randomCoor()]);
-  const [curCoors, setCurCoors] = useState([-1, -1]);
+  const [curCoors, setCurCoors] = useState([-1, -1]); // [r,c] for grid, [-1, index] for selections
   const [isRevealMode, setIsRevealMode] = useState(false);
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
   const [selections, setSelections] = useState<Selection[]>([]);
-  const [score, setScore] = useState(4);
+  const [score, setScore] = useState(0);
   const [isLost, setIsLost] = useState(false);
   const [isResetTooltipVisible, setIsResetTooltipVisible] = useState(false);
   const [stars, setStars] = useState<Star[]>([]);
@@ -143,6 +143,13 @@ const App: React.FC = () => {
       <InfoRow>
         <StyledButton
           onClick={() => {
+            setIsPreviewMode(!isPreviewMode);
+          }}
+        >
+          {isPreviewMode ? "preview on" : "preview off"}
+        </StyledButton>
+        <StyledButton
+          onClick={() => {
             setIsRevealMode(!isRevealMode);
           }}
         >
@@ -180,16 +187,25 @@ const App: React.FC = () => {
                 const isMissing =
                   hiddenCoors.findIndex(
                     (arr) => arr[0] === rId && arr[1] === cId
-                  ) != -1;
+                  ) !== -1;
 
                 let [shownRClr, shownCClr] = [rClr, cClr];
-                if (isRevealMode) {
+                if (isRevealMode && curCoors[0] !== -1 && curCoors[1] !== -1) {
                   if (rId === curCoors[0] && cId !== curCoors[1]) {
                     shownCClr = rClr;
                   } else if (rId !== curCoors[0] && cId === curCoors[1]) {
                     shownRClr = cClr;
                   }
                 }
+
+                const selectionId = curCoors[0] === -1 ? curCoors[1] : -1;
+                const cellColor =
+                  isMissing && isPreviewMode && selectionId !== -1
+                    ? selections[selectionId].clr
+                    : averageClr(shownRClr, shownCClr);
+
+                console.log(curCoors, cellColor);
+
                 return (
                   <ClrCell
                     key={`${rId}-${cId}`}
@@ -199,9 +215,13 @@ const App: React.FC = () => {
                     onMouseLeave={() => {
                       setCurCoors([-1, -1]);
                     }}
-                    rgb={averageClr(shownRClr, shownCClr)}
+                    rgb={cellColor}
                     size={CELL_SIZE}
-                    isHidden={isMissing && !isLost}
+                    isHidden={
+                      isMissing &&
+                      !isLost &&
+                      !(isPreviewMode && selectionId !== -1)
+                    }
                   >
                     {isMissing && isLost && <BsCheck />}
                   </ClrCell>
@@ -241,6 +261,12 @@ const App: React.FC = () => {
               rgb={sel.clr}
               size={CELL_SIZE}
               style={{ cursor: "pointer" }}
+              onMouseEnter={() => {
+                setCurCoors([-1, id]);
+              }}
+              onMouseLeave={() => {
+                setCurCoors([-1, -1]);
+              }}
             >
               {content}
             </ClrCell>

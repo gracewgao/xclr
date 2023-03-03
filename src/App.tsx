@@ -73,8 +73,6 @@ const App: React.FC = () => {
   const [isResetTooltipVisible, setIsResetTooltipVisible] = useState(false);
   const [stars, setStars] = useState<Star[]>([]);
 
-  // const resetRef = useRef();
-
   const resetGrid = () => {
     setRowClrs([...Array(GRID_SIZE)].map(() => randomClr()));
     setColClrs([...Array(GRID_SIZE)].map(() => randomClr()));
@@ -140,45 +138,48 @@ const App: React.FC = () => {
           <Link href="https://www.github.com/harrchiu">harrison</Link>
         </Column>
       </TitleRow>
-      <InfoRow>
-        <StyledButton
-          onClick={() => {
-            setIsPreviewMode(!isPreviewMode);
-          }}
-        >
-          {isPreviewMode ? "preview on" : "preview off"}
-        </StyledButton>
-        <StyledButton
-          onClick={() => {
-            setIsRevealMode(!isRevealMode);
-          }}
-        >
-          {isRevealMode ? "hover hint on" : "hover hint off"}
-        </StyledButton>
-        <ScoreText>Score: {score}</ScoreText>
-        <StyledReset
-          onClick={() => {
-            if (!score) {
-              resetGrid();
-            }
-            setScore(0);
-            setStars([]);
-          }}
-          onMouseEnter={() => {
-            setIsResetTooltipVisible(true);
-            // setTimeout(() => {
-            //   setIsResetTooltipVisible(true);
-            // }, 1000);
-          }}
-          onMouseLeave={() => {
-            // clearTimeout(tooltipTimeout);
-            setIsResetTooltipVisible(false);
-          }}
-        />
-        <ResetTooltip show={isResetTooltipVisible}>
-          press tab to restart
-        </ResetTooltip>
-      </InfoRow>
+      <TopRow>
+        <InfoRow>
+          <StyledButton
+            onClick={() => {
+              setIsPreviewMode(!isPreviewMode);
+            }}
+          >
+            {isPreviewMode ? "preview on" : "preview off"}
+          </StyledButton>
+          <StyledButton
+            onClick={() => {
+              setIsRevealMode(!isRevealMode);
+            }}
+          >
+            {isRevealMode ? "hover hint on" : "hover hint off"}
+          </StyledButton>
+          <ScoreText>Score: {score}</ScoreText>
+          <StyledReset
+            onClick={() => {
+              if (!score) {
+                resetGrid();
+              }
+              setScore(0);
+              setStars([]);
+            }}
+            onMouseEnter={() => {
+              setIsResetTooltipVisible(true);
+              // setTimeout(() => {
+              //   setIsResetTooltipVisible(true);
+              // }, 1000);
+            }}
+            onMouseLeave={() => {
+              // clearTimeout(tooltipTimeout);
+              setIsResetTooltipVisible(false);
+            }}
+          />
+          <ResetTooltip show={isResetTooltipVisible}>
+            press tab to restart
+          </ResetTooltip>
+        </InfoRow>
+      </TopRow>
+
       <Column>
         {rowClrs.map((rClr, rId) => {
           return (
@@ -203,8 +204,6 @@ const App: React.FC = () => {
                   isMissing && isPreviewMode && selectionId !== -1
                     ? selections[selectionId].clr
                     : averageClr(shownRClr, shownCClr);
-
-                console.log(curCoors, cellColor);
 
                 return (
                   <ClrCell
@@ -293,12 +292,12 @@ const Row = styled.div`
 `;
 
 const ResetTooltip = styled(Row)<{ show: boolean }>`
-  display: ${(props) => (props.show ? "flex" : "none")};
+  display: ${(props) => (props.show ? "block" : "none")};
   justify-content: center;
   align-items: center;
   font-size: 16px;
   position: absolute;
-  margin-left: 440px;
+  right: -150px;
 `;
 
 const StyledReset = styled(GrPowerReset)`
@@ -354,6 +353,11 @@ const InfoRow = styled(Row)`
   justify-content: center;
   align-items: center;
   gap: 20px;
+  position: relative;
+`;
+
+const TopRow = styled.div`
+  position: relative;
 `;
 
 const GuessSection = styled(Row)`

@@ -1,0 +1,13 @@
+{
+  "files": {
+    "main.css": "/xclr/static/css/main.e6c13ad2.css",
+    "main.js": "/xclr/static/js/main.ac4ea85e.js",
+    "index.html": "/xclr/index.html",
+    "main.e6c13ad2.css.map": "/xclr/static/css/main.e6c13ad2.css.map",
+    "main.ac4ea85e.js.map": "/xclr/static/js/main.ac4ea85e.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.e6c13ad2.css",
+    "static/js/main.ac4ea85e.js"
+  ]
+}
